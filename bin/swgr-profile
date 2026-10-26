@@ -1,0 +1,24 @@
+#!/bin/zsh
+# Profile the running game: per-thread CPU hotspots (via sample), GPU utilization,
+# memory and D3DMetal shader-cache growth. Run it while you are IN A RACE.
+#   swgr-profile [seconds]   (default 60)   -> writes ~/swgr-profile-<time>.txt
+DUR="${1:-60}"; OUT="$HOME/swgr-profile-$(date +%H%M%S).txt"; INT=20
+P=$(pgrep -f "SWGR-Win64-Shipping.exe" | head -1)
+[ -z "$P" ] && { echo "game is not running"; exit 1; }
+CACHE="$(getconf DARWIN_USER_CACHE_DIR)/d3dm/SWGR-Win64-Shipping.exe"
+gpu() { ioreg -r -c IOAccelerator -d 1 2>/dev/null | grep -o -E '"(Device|Renderer|Tiler) Utilization %"=[0-9]+' | tr -d '"' | tr '\n' ' '; }
+{
+echo "=== swgr-profile pid=$P duration=${DUR}s $(date)"
+echo "cpu: $(sysctl -n hw.perflevel0.logicalcpu)P+$(sysctl -n hw.perflevel1.logicalcpu)E cores"
+for ((t=0; t<DUR; t+=INT)); do
+  echo "--- t=${t}s  proc_cpu=$(ps -o %cpu= -p $P | tr -d ' ')%  rss_mb=$(( ${$(ps -o rss= -p $P | tr -d " "):-0}/1024 ))  threads=$(ps -M -p $P | wc -l | tr -d ' ')  gpu: $(gpu)  shader_cache=$(du -sm "$CACHE" 2>/dev/null | cut -f1)MB  mem_pressure=$(memory_pressure 2>/dev/null | tail -1 | grep -o -E '[0-9]+%')"
+  SF="$HOME/swgr-sample-$(date +%H%M%S).txt"
+  sample "$P" 3 25 -file "$SF" >/dev/null 2>&1
+  echo "    (raw sample: $SF)"
+  "$HOME/bin/swgr-analyze" "$SF" | sed 's/^/    /'
+  pgrep -f "SWGR-Win64-Shipping.exe" >/dev/null || { echo "game exited"; break; }
+  sleep $((INT-3))
+done
+echo "=== done"
+} | tee "$OUT"
+echo "saved: $OUT"

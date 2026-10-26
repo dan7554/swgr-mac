@@ -1,0 +1,23 @@
+#!/bin/zsh
+# Replace CrossOver's bundled Apple GPTK libraries with the ones from a mounted
+# "Evaluation environment for Windows games" DMG, following Apple's README.
+# Needs macOS "App Management" permission for the terminal app you run this from
+# (System Settings > Privacy & Security > App Management), or you will see
+# "Operation not permitted".
+set -e
+A=/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/lib64/apple_gptk
+VOL="${1:-$(ls -d /Volumes/Evaluation\ environment* 2>/dev/null | sort | tail -1)}"
+[ -d "$VOL/redist/lib" ] || { echo "Mount the evaluation environment DMG first (or pass its path)." >&2; exit 1; }
+cd "$A"
+OLD=$(defaults read "$A/external/D3DMetal.framework/Versions/A/Resources/Info.plist" CFBundleShortVersionString 2>/dev/null || echo unknown)
+echo "Replacing D3DMetal $OLD with $(defaults read "$VOL/redist/lib/external/D3DMetal.framework/Versions/A/Resources/Info.plist" CFBundleShortVersionString)"
+rm -rf external.old wine.old
+mv external external.old; mv wine wine.old
+ditto "$VOL/redist/lib/" .
+# CrossOver expects these names; the redist renamed nvngx and lacks the atidxx64 stub.
+cp -f wine/x86_64-windows/nvngx-on-metalfx.dll wine/x86_64-windows/nvngx.dll
+cp -a wine.old/x86_64-windows/atidxx64.dll wine/x86_64-windows/ 2>/dev/null || true
+[ -e wine/x86_64-unix/nvngx.so ] || ln -s ../../external/libd3dshared.dylib wine/x86_64-unix/nvngx.so
+[ -e wine/x86_64-unix/atidxx64.so ] || ln -s ../../external/libd3dshared.dylib wine/x86_64-unix/atidxx64.so
+echo "Installed: $(defaults read "$A/external/D3DMetal.framework/Versions/A/Resources/Info.plist" CFBundleShortVersionString)"
+ls wine/x86_64-windows

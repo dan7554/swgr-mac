@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+# Analyze a `sample` file: threads that are really running (no wait/blocking call anywhere
+# in the stack path) and the hottest symbolized frames. Usage: swgr-analyze SAMPLE.txt
+import sys,re
+lines=open(sys.argv[1]).read().split('\n')
+start=next(i for i,l in enumerate(lines) if l.startswith('Call graph:'))
+end=next((i for i,l in enumerate(lines) if l.startswith('Total number in stack') or l.startswith('Binary Images:')),len(lines))
+WAIT=re.compile(r'mach_msg|__psynch|semaphore_wait|kevent|__select|\bpoll\b|usleep|__sleep|__ulock_wait|swtch|NtDelayExecution|NtWaitFor|WaitFor|__workq_kernreturn|thread_block|__semwait|nanosleep|mach_wait|__recvfrom|__sigsuspend|__ulock_wait2|msync_wait|NtUserMsgWait|NtUserGetMessage|_pthread_cond_wait|read\$NOCANCEL|_dispatch_mgr_thread|_dispatch_sig_thread|wait4|os_sync_wait_on_address|timed_wait|wait_signal|_pthread_wqthread|read_reply_data|wait_select_reply|_firstfit_lock_wait|_os_unfair_lock_lock_slow|IOConnectTrap|__wine_reserve|exceptionserver')
+rows=[]
+for l in lines[start+1:end]:
+    m=re.match(r'^(\s*)[+!|: ]*?(\d+)\s+(.*)$', l)
+    if not m: continue
+    indent=len(l)-len(l.lstrip(' +!|:')); rows.append((indent,int(m.group(2)),m.group(3)))
+hot={}; idle={}; leaves={}; libs={}; tname=None; stack=[]
+for i,(ind,cnt,txt) in enumerate(rows):
+    if ind==4 and txt.startswith('Thread_'):
+        tname=re.sub(r'^Thread_[0-9a-f]+:?\s*','',txt).split('  ')[0].strip() or '(unnamed)'; stack=[]; continue
+    while stack and stack[-1][0]>=ind: stack.pop()
+    stack.append((ind,txt))
+    nxt=rows[i+1][0] if i+1<len(rows) else 0
+    if nxt<=ind:  # leaf: classify by whole path
+        path=[t for _,t in stack]
+        if any(WAIT.search(t) for t in path):
+            idle[tname]=idle.get(tname,0)+cnt; continue
+        hot[tname]=hot.get(tname,0)+cnt
+        # hottest symbolized frame nearest the leaf
+        sym=next((t for t in reversed(path) if not t.startswith('???')), path[-1])
+        sym=re.sub(r'\s+\[0x[0-9a-f]+\]$','',sym); sym=re.sub(r'\s+\+\s+\d+','',sym)
+        leaves[sym]=leaves.get(sym,0)+cnt
+        lm=re.search(r'\(in ([^)]+)\)',path[-1]); lib=lm.group(1) if lm else '?'
+        libs[lib]=libs.get(lib,0)+cnt
+tot=sum(hot.values()) or 1
+allt=tot+sum(idle.values())
+print(f"--- running {tot} of {allt} thread-samples ({100*tot/allt:.1f}% busy); busiest threads:")
+for t,c in sorted(hot.items(),key=lambda x:-x[1])[:14]: print(f"  {c:6d} {100*c/tot:5.1f}%  {t}")
+print("--- running time by library of the top frame:")
+for t,c in sorted(libs.items(),key=lambda x:-x[1])[:8]: print(f"  {c:6d} {100*c/tot:5.1f}%  {t}")
+print("--- hottest symbolized frames (nearest the top):")
+for s,c in sorted(leaves.items(),key=lambda x:-x[1])[:16]: print(f"  {c:6d}  {s[:120]}")

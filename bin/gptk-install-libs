@@ -1,0 +1,28 @@
+#!/bin/zsh
+# Overlay Apple's Game Porting Toolkit evaluation-environment libraries
+# (D3DMetal + the DirectX bridge DLLs) into the prebuilt toolkit app.
+# Mount the "Evaluation environment for Windows games" DMG first, or pass its path.
+set -e
+APP_LIB="/Applications/Game Porting Toolkit.app/Contents/Resources/wine/lib"
+VOL="${1:-$(ls -d /Volumes/Evaluation\ environment* 2>/dev/null | sort | tail -1)}"
+if [ -z "$VOL" ] || [ ! -d "$VOL/redist/lib" ]; then
+  echo "No mounted evaluation-environment volume with redist/lib found. Pass its path as an argument." >&2
+  ls /Volumes >&2; exit 1
+fi
+OLD=$(defaults read "$APP_LIB/external/D3DMetal.framework/Versions/A/Resources/Info.plist" CFBundleShortVersionString 2>/dev/null || echo unknown)
+BK="$APP_LIB/gptk-backup-$OLD"
+echo "Source: $VOL/redist/lib   (current D3DMetal: $OLD, backup -> $BK)"
+rm -rf "$BK"; mkdir -p "$BK/wine/x86_64-windows" "$BK/wine/x86_64-unix"
+cp -R "$APP_LIB/external" "$BK/external"
+for d in x86_64-windows x86_64-unix; do
+  for f in "$VOL/redist/lib/wine/$d"/*; do
+    b=$(basename "$f"); [ -e "$APP_LIB/wine/$d/$b" ] && cp -R "$APP_LIB/wine/$d/$b" "$BK/wine/$d/"
+  done
+done
+ditto "$VOL/redist/lib/" "$APP_LIB/"
+# Make the MetalFX (DLSS bridge) names available too; harmless when unused.
+[ -f "$APP_LIB/wine/x86_64-windows/nvngx-on-metalfx.dll" ] && cp -f "$APP_LIB/wine/x86_64-windows/nvngx-on-metalfx.dll" "$APP_LIB/wine/x86_64-windows/nvngx.dll"
+[ -e "$APP_LIB/wine/x86_64-unix/nvngx.so" ] || cp "$APP_LIB/wine/x86_64-unix/nvngx-on-metalfx.so" "$APP_LIB/wine/x86_64-unix/nvngx.so"
+cp -f "$APP_LIB/wine/x86_64-windows/nvngx.dll" "$APP_LIB/wine/x86_64-windows/nvapi64.dll" "${WINEPREFIX:-$HOME/.wine}/drive_c/windows/system32/" 2>/dev/null || true
+echo "Installed D3DMetal: $(defaults read "$APP_LIB/external/D3DMetal.framework/Versions/A/Resources/Info.plist" CFBundleShortVersionString)"
+"/Applications/Game Porting Toolkit.app/Contents/Resources/wine/bin/wine64" --version

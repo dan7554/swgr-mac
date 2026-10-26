@@ -1,0 +1,12 @@
+#!/bin/zsh
+# Launch STAR WARS: Galactic Racer directly (bypassing the Epic Online Services
+# bootstrapper, which crashes the game under CrossOver). Steam must be running
+# in the "Games" bottle (~/bin/steam-cx) so Steamworks features work.
+# The bottle is configured for Apple's D3DMetal backend with the Metal HUD.
+CX=/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/bin
+D="$HOME/Library/Application Support/CrossOver/Bottles/Games/drive_c/Program Files (x86)/Steam/steamapps/common/STAR WARS Galactic Racer/Griffin/Binaries/Win64"
+[ -f "$D/steam_appid.txt" ] || printf 4078430 > "$D/steam_appid.txt"
+export CX_BOTTLE=Games
+export D3DM_ENABLE_METALFX="${D3DM_ENABLE_METALFX:-0}"
+pgrep -f "Steam\\.exe" >/dev/null || { "$CX/wine" --bottle Games --cx-app steam.exe & sleep 25; }
+exec "$CX/wine" --bottle Games --workdir "$D" "$D/SWGR-Win64-Shipping.exe" Griffin -isSteam "$@"

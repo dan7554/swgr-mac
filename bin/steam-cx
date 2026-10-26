@@ -1,0 +1,4 @@
+#!/bin/zsh
+# Launch the Windows Steam client in the CrossOver "Games" bottle.
+CX=/Applications/CrossOver.app/Contents/SharedSupport/CrossOver/bin
+exec "$CX/wine" --bottle Games --cx-app steam.exe "$@"

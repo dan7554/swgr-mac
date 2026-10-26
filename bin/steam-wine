@@ -1,0 +1,10 @@
+#!/bin/zsh
+# Launch the Windows Steam client under Apple's Game Porting Toolkit (Wine).
+# Usage: steam-wine [extra steam.exe args]
+export WINEPREFIX="${WINEPREFIX:-$HOME/.wine}"
+export WINEDEBUG="${WINEDEBUG:--all}"
+export WINEESYNC=1
+export MTL_HUD_ENABLED="${MTL_HUD_ENABLED:-0}"
+WINE="/Applications/Game Porting Toolkit.app/Contents/Resources/wine/bin/wine64"
+cd "$WINEPREFIX/drive_c" || exit 1
+exec "$WINE" "C:\\Program Files (x86)\\Steam\\steam.exe" "$@"

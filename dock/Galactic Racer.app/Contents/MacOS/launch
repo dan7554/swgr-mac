@@ -1,0 +1,5 @@
+#!/bin/zsh
+# Dock launcher: runs ~/bin/swgr-run --dock (Steam first, update check, then the game).
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$HOME/bin"
+LOG="$HOME/Library/Logs/galactic-racer-launch.log"
+exec "$HOME/bin/swgr-run" --dock >> "$LOG" 2>&1

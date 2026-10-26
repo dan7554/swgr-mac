@@ -1,0 +1,6 @@
+# Apple's libraries are never committed (license); profiles may contain paths
+*.dylib
+*.framework/
+*.dll
+*.so
+.DS_Store

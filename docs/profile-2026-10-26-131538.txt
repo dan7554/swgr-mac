@@ -1,0 +1,140 @@
+=== swgr-profile pid=76377 duration=90s Mon Oct 26 13:15:38 MDT 2026
+cpu: 4P+6E cores
+--- t=0s  proc_cpu=428.8%  rss_mb=5518  threads=127  gpu: Tiler Utilization %=86 Renderer Utilization %=90 Device Utilization %=96   shader_cache=979MB  mem_pressure=59%
+    thread load (samples of 5s, top 12):
+        626 wine_xinput_hid_update
+        626 wine_threadpool_worker
+        626 wine_threadpool_timerqueue
+        626 wine_sechost_device_notify
+        626 wine_rpcrt4_server
+        626 wine_mmdevapi_notification
+        626 sentry-http
+        626 mmdevapi_midi_notify
+        626 com.apple.rosetta.exceptionserver
+        626 com.apple.audio.IOThread.client
+        626 com.apple.NSEventThread
+        626 caulk::deferred_logger
+    hottest frames (by library):
+       49654 ntdll.so
+        1686 wine
+         553 libobjc.A.dylib
+         513 AGXMetalG17G
+         498 AppKit
+         277 D3DMetal
+         274 libdispatch.dylib
+         209 win32u.so
+--- t=10s  proc_cpu=550.1%  rss_mb=5034  threads=127  gpu: Tiler Utilization %=62 Renderer Utilization %=72 Device Utilization %=91   shader_cache=979MB  mem_pressure=57%
+    thread load (samples of 5s, top 12):
+        510 wine_xinput_hid_update
+        510 wine_threadpool_worker
+        510 wine_threadpool_timerqueue
+        510 wine_sechost_device_notify
+        510 wine_rpcrt4_server
+        510 wine_mmdevapi_notification
+        510 sentry-http
+        510 mmdevapi_midi_notify
+        510 com.apple.rosetta.exceptionserver
+        510 com.apple.audio.IOThread.client
+        510 com.apple.NSEventThread
+        510 caulk::deferred_logger
+    hottest frames (by library):
+       50073 ntdll.so
+        3039 wine
+         785 AGXMetalG17G
+         482 D3DMetal
+         319 libMTLHud.dylib
+         314 libdispatch.dylib
+         199 libsystem_pthread.dylib
+         174 IOGPU
+--- t=20s  proc_cpu=488.3%  rss_mb=5121  threads=129  gpu: Tiler Utilization %=53 Renderer Utilization %=65 Device Utilization %=88   shader_cache=979MB  mem_pressure=57%
+    thread load (samples of 5s, top 12):
+        477 wine_xinput_hid_update
+        477 wine_threadpool_worker
+        477 wine_threadpool_timerqueue
+        477 wine_sechost_device_notify
+        477 wine_rpcrt4_server
+        477 wine_mmdevapi_notification
+        477 sentry-http
+        477 mmdevapi_midi_notify
+        477 com.apple.rosetta.exceptionserver
+        477 com.apple.audio.IOThread.client
+        477 com.apple.NSEventThread
+        477 caulk::deferred_logger
+    hottest frames (by library):
+       50103 ntdll.so
+        2756 wine
+         770 AGXMetalG17G
+         445 D3DMetal
+         342 libMTLHud.dylib
+         243 libdispatch.dylib
+         228 IOGPU
+         176 libsystem_pthread.dylib
+--- t=30s  proc_cpu=498.3%  rss_mb=5129  threads=129  gpu: Tiler Utilization %=48 Renderer Utilization %=62 Device Utilization %=85   shader_cache=979MB  mem_pressure=57%
+    thread load (samples of 5s, top 12):
+        489 wine_xinput_hid_update
+        489 wine_threadpool_worker
+        489 wine_threadpool_timerqueue
+        489 wine_sechost_device_notify
+        489 wine_rpcrt4_server
+        489 wine_mmdevapi_notification
+        489 sentry-http
+        489 mmdevapi_midi_notify
+        489 com.apple.rosetta.exceptionserver
+        489 com.apple.audio.IOThread.client
+        489 com.apple.NSEventThread
+        489 caulk::deferred_logger
+    hottest frames (by library):
+       50008 ntdll.so
+        2538 wine
+         899 AGXMetalG17G
+         510 D3DMetal
+         375 libMTLHud.dylib
+         273 libdispatch.dylib
+         171 libsystem_pthread.dylib
+         170 IOGPU
+--- t=40s  proc_cpu=473.9%  rss_mb=5153  threads=128  gpu: Tiler Utilization %=51 Renderer Utilization %=67 Device Utilization %=85   shader_cache=979MB  mem_pressure=57%
+    thread load (samples of 5s, top 12):
+        784 wine_xinput_hid_update
+        784 wine_threadpool_worker
+        784 wine_threadpool_timerqueue
+        784 wine_sechost_device_notify
+        784 wine_rpcrt4_server
+        784 wine_mmdevapi_notification
+        784 sentry-http
+        784 mmdevapi_midi_notify
+        784 com.apple.rosetta.exceptionserver
+        784 com.apple.audio.IOThread.client
+        784 com.apple.NSEventThread
+        784 caulk::deferred_logger
+    hottest frames (by library):
+       51687 ntdll.so
+        1198 wine
+         320 AGXMetalG17G
+         230 D3DMetal
+         174 libMTLHud.dylib
+         143 libdispatch.dylib
+         139 libsystem_pthread.dylib
+         105 libsystem_platform.dylib
+--- t=50s  proc_cpu=217.9%  rss_mb=5192  threads=128  gpu: Tiler Utilization %=66 Renderer Utilization %=75 Device Utilization %=83   shader_cache=979MB  mem_pressure=62%
+    thread load (samples of 5s, top 12):
+       2477 com.apple.rosetta.exceptionserver
+       2477 com.apple.NSEventThread
+       2477 caulk::deferred_logger
+       2477 caulk.messenger.shared:high
+       2477 caulk.messenger.shared:17
+       2477 Main Thread   DispatchQueue_<multiple>
+       2477 DispatchQueue_1523: com.Metal.MappingDispatch
+       2477 (unnamed)
+       2477 (unnamed)
+       2477 (unnamed)
+       2477 (unnamed)
+       2477 (unnamed)
+    hottest frames (by library):
+       52006 ntdll.so
+         262 libsystem_pthread.dylib
+         206 wine
+         181 libobjc.A.dylib
+         143 CoreFoundation
+         140 Metal
+          77 win32u.so
+          67 libsystem_platform.dylib

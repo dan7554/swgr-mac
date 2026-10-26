@@ -1,0 +1,12 @@
+#!/bin/zsh
+# Launch STAR WARS: Galactic Racer (Steam app 4078430) through Apple's Game
+# Porting Toolkit with the Metal performance HUD. Steam must be logged in
+# once in this prefix (run ~/bin/steam-wine first).
+export WINEPREFIX="${WINEPREFIX:-$HOME/.wine}"
+export WINEDEBUG="${WINEDEBUG:--all}"
+export WINEESYNC=1
+export MTL_HUD_ENABLED="${MTL_HUD_ENABLED:-1}"
+export D3DM_ENABLE_METALFX="${D3DM_ENABLE_METALFX:-0}"
+WINE="/Applications/Game Porting Toolkit.app/Contents/Resources/wine/bin/wine64"
+cd "$WINEPREFIX/drive_c" || exit 1
+exec "$WINE" "C:\\Program Files (x86)\\Steam\\steam.exe" -applaunch 4078430 "$@"

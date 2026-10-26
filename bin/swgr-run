@@ -1,0 +1,84 @@
+#!/bin/zsh
+# Run STAR WARS: Galactic Racer on Apple's D3DMetal (GPTK 4.0b3) using the
+# Rosetta-patched Wine engine left on disk by Hrava (winecx 26.2 custom v15,
+# GPL Wine). Its patches emulate hardware execution breakpoints, extend CPUID
+# leaf 7, and emulate clwb/rdpid, which this game's Denuvo build requires under
+# Rosetta. Uses the existing "Games" prefix (Steam already logged in there).
+#
+#   swgr-run [options]   launch Steam if needed, then the game
+#   swgr-run steam       launch only Steam
+# Options (combine freely):
+#   --no-rt       disable DirectX Raytracing in D3DMetal
+#   --rt          re-enable DirectX Raytracing in D3DMetal
+#   --mtl4        force D3DMetal's Metal 4 backend (default on macOS 27, off on 26)
+#   --metalfx     expose DLSS options and map them to MetalFX upscaling + frame interpolation
+#   --no-hud      hide the Metal performance HUD
+#   --stats       Metal HUD with D3DMetal's extra statistics
+#   --d3dm-log    keep D3DMetal/Wine error output in ~/swgr-last.log
+#   --dock        launch via Steam (update check + Steam launch chain), direct launch as fallback
+set -u
+E="$HOME/Library/Application Support/GreatGame/Engines/winecx-26.2-custom-v15"
+export WINEPREFIX="$HOME/Library/Application Support/GreatGame/Bottles/Games"
+GPTK="$E/lib"   # Apple DLLs are installed into the engine tree; originals in lib/wine/pre-gptk-backup
+GAME="$WINEPREFIX/drive_c/Program Files (x86)/Steam/steamapps/common/STAR WARS Galactic Racer/Griffin/Binaries/Win64"
+GST="$E/lib/GStreamer.framework/Versions/1.0/lib/gstreamer-1.0"
+
+export PATH="$E/bin:$PATH"
+export WINEDEBUG="${WINEDEBUG:--all}"
+export WINEMSYNC=1
+export WINE_GST_REGISTRY_DIR="$WINEPREFIX"
+export GST_PLUGIN_PATH="$GST" GST_PLUGIN_SYSTEM_PATH="$GST" GST_PLUGIN_PATH_1_0="$GST" GST_PLUGIN_SYSTEM_PATH_1_0="$GST"
+export WINE_CPU_TOPOLOGY="10:0,1,2,3,4,5,6,7,8,9"
+# Apple D3DMetal 4.0b3 lives in the engine tree (lib/wine + lib/external).
+export CX_APPLEGPTK_LIBD3DSHARED_PATH="$GPTK/external/libd3dshared.dylib"
+export D3DMETAL_FRAMEWORK_PATH="$GPTK/external/D3DMetal.framework/D3DMetal"
+export CX_GRAPHICS_BACKEND=d3dmetal
+export CX_ACTIVE_GRAPHICS_BACKEND=d3dmetal
+export MTL_HUD_ENABLED="${MTL_HUD_ENABLED:-1}"
+export D3DM_ENABLE_METALFX="${D3DM_ENABLE_METALFX:-0}"
+# Denuvo under Rosetta: advertise AVX/AVX2 and (via the engine patch) CLFLUSHOPT+CLWB and RDPID.
+export ROSETTA_ADVERTISE_AVX=1
+export WINE_ROSETTA_CPUID7_OR="${WINE_ROSETTA_CPUID7_OR:-01800000,00400000}"
+
+ARGS=()
+for a in "$@"; do
+  case "$a" in
+    --no-rt)   export D3DM_SUPPORT_DXR=0 ;;
+    --rt)      export D3DM_SUPPORT_DXR=1 ;;
+    --mtl4)    export D3DM_MTL4=1 ;;
+    --metalfx) export D3DM_ENABLE_METALFX=1 D3DM_VENDOR_ID=0x10DE D3DM_DEVICE_ID=0x2684 D3DM_DEVICE_DESCRIPTION="NVIDIA GeForce RTX 4090" ;;
+    --no-hud)  export MTL_HUD_ENABLED=0 ;;
+    --stats)   export MTL_HUD_ENABLED=1 D3DM_SHOW_HUD_STATS=1 ;;
+    --d3dm-log) exec > "$HOME/swgr-last.log" 2>&1 ;;
+    --dock)    DOCK=1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+set -- "${ARGS[@]}"
+if ! pgrep -f "steamwebhelper.exe" >/dev/null; then
+  ( cd "$WINEPREFIX/drive_c" && WINEDLLOVERRIDES="wineusb=;winebth=" nohup "$E/bin/wine" "C:\\Program Files (x86)\\Steam\\steam.exe" -cef-disable-sandbox >/dev/null 2>&1 & )
+  echo "starting Steam in the Games prefix..."; for i in $(seq 1 30); do sleep 2; pgrep -f "steamwebhelper.exe" >/dev/null && break; done; sleep 8
+fi
+[ "${1:-}" = "steam" ] && exit 0
+CB="$WINEPREFIX/drive_c/Program Files (x86)/Steam"
+if [ "${DOCK:-0}" = "1" ]; then
+  # Wait for Steam to be logged on, then ask it to launch the game so it runs its update check
+  # and its own launch chain. If Steam does not start the game within 90 s, fall back to the
+  # direct launch below (after Steam's scheduler reports the app fully installed).
+  for i in $(seq 1 24); do tail -3 "$CB/logs/connection_log.txt" 2>/dev/null | grep -q "Logged On" && break; sleep 5; done
+  ( cd "$WINEPREFIX/drive_c" && "$E/bin/wine" "C:\\Program Files (x86)\\Steam\\steam.exe" -applaunch 4078430 >/dev/null 2>&1 )
+  for i in $(seq 1 18); do sleep 5; pgrep -f "SWGR-Win64-Shipping.exe" >/dev/null && { echo "launched through Steam"; exit 0; }; done
+  echo "Steam did not start the game; launching directly after update check"
+  for i in $(seq 1 120); do
+    grep -q '"StateFlags"		"4"' "$CB/steamapps/appmanifest_4078430.acf" 2>/dev/null && break; sleep 5
+  done
+fi
+[ -f "$GAME/steam_appid.txt" ] || printf 4078430 > "$GAME/steam_appid.txt"
+# The game sometimes wipes its user Engine.ini at startup; restore our render overrides each launch.
+INI="$WINEPREFIX/drive_c/users/crossover/AppData/Local/StarWarsGalacticRacer/Saved/Config/Windows/Engine.ini"
+if [ ! -s "$INI" ] && [ -f "$HOME/bin/swgr-engine.ini.template" ]; then
+  mkdir -p "$(dirname "$INI")"; cp "$HOME/bin/swgr-engine.ini.template" "$INI"; chflags uchg "$INI" 2>/dev/null
+fi
+cd "$GAME" || exit 1
+export WINEDLLOVERRIDES="wineusb=;winebth="   # Apple DLLs come via the per-exe GraphicsDllDirectory64 registry key
+exec "$E/bin/wine" "$GAME/SWGR-Win64-Shipping.exe" Griffin -isSteam "$@"
