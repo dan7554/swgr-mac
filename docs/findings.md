@@ -103,3 +103,15 @@ changes must be made in the in-game menu.
 `CX_APPLEGPTK_LIBD3DSHARED_PATH`, `D3DMETAL_FRAMEWORK_PATH`, `MTL_HUD_ENABLED`,
 optional `D3DM_SUPPORT_DXR`, `D3DM_MTL4`, `D3DM_ENABLE_METALFX`, `D3DM_VENDOR_ID`,
 `D3DM_DEVICE_ID`, `D3DM_DEVICE_DESCRIPTION`, `D3DM_SHOW_HUD_STATS`, `D3DM_MAX_FPS`.
+
+## 11. Dock launches felt slower: two causes found
+- Steam's first launch attempt ran the game's install script, which installed **Epic Online
+  Services** into the prefix. From then on the EOS SDK injected four `EOSOverlayRenderer`
+  processes (a Chromium overlay) into the game. The SDK finds the overlay through
+  `HKLM\Software\Wow6432Node\Epic Games\EOS\OverlayPath`; `scripts/eos-overlay.sh off`
+  removes that value (reversible with `on`).
+- The settings file had flipped from exclusive fullscreen (0) to windowed fullscreen (1),
+  which goes through the compositor. Set it back in the game's display menu.
+- Precaution: the Dock app now has `NSAppSleepDisabled` and runs the launcher through
+  `taskpolicy -t 0 -l 0`, so App Nap cannot push the Wine processes into a background
+  scheduling class.
