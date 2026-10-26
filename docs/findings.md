@@ -115,3 +115,11 @@ optional `D3DM_SUPPORT_DXR`, `D3DM_MTL4`, `D3DM_ENABLE_METALFX`, `D3DM_VENDOR_ID
 - Precaution: the Dock app now has `NSAppSleepDisabled` and runs the launcher through
   `taskpolicy -t 0 -l 0`, so App Nap cannot push the Wine processes into a background
   scheduling class.
+
+## 12. Upscaling and frame generation: what is stable
+- **FSR 3 upscaling alone (frame interpolation off): stable, no flicker.** This is the setting
+  to use. Combined with TSR off it is where the good frame rate came from.
+- FSR 3 frame interpolation: flickers on D3DMetal 4.0b3 even with
+  `r.FidelityFX.FI.AllowAsyncWorkloads=0` (kept in Engine.ini, harmless when FI is off).
+- Untested alternative for frame generation: `swgr-run --metalfx` with DLSS Frame Generation
+  selected in the menu (D3DMetal maps it to MetalFX frame interpolation).
