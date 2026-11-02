@@ -12,7 +12,7 @@
 #   --rt          re-enable DirectX Raytracing in D3DMetal
 #   --mtl4        force D3DMetal's Metal 4 backend (default on macOS 27, off on 26)
 #   --metalfx     expose DLSS options and map them to MetalFX upscaling + frame interpolation
-#   --no-hud      hide the Metal performance HUD
+#   --no-hud      hide the Metal performance HUD (the Dock app passes this)
 #   --stats       Metal HUD with D3DMetal's extra statistics
 #   --d3dm-log    keep D3DMetal/Wine error output in ~/swgr-last.log
 #   --dock        launch via Steam (update check + Steam launch chain), direct launch as fallback
@@ -50,7 +50,7 @@ for a in "$@"; do
     --no-hud)  export MTL_HUD_ENABLED=0 ;;
     --stats)   export MTL_HUD_ENABLED=1 D3DM_SHOW_HUD_STATS=1 ;;
     --d3dm-log) exec > "$HOME/swgr-last.log" 2>&1 ;;
-    --dock)    DOCK=1 ;;
+    --dock)    DOCK=1; export MTL_HUD_ENABLED=0; unset D3DM_SHOW_HUD_STATS ;;
     *) ARGS+=("$a") ;;
   esac
 done

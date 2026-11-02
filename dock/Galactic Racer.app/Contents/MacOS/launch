@@ -1,9 +1,9 @@
 #!/bin/zsh
-# Dock launcher: runs ~/bin/swgr-run --dock (Steam first, update check, then the game).
+# Dock launcher: runs ~/bin/swgr-run --dock --no-hud (Steam first, update check, then the game; no FPS HUD).
 export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$HOME/bin"
 LOG="$HOME/Library/Logs/galactic-racer-launch.log"
 {
   echo "=== $(date) dock launch; nice=$(ps -o nice= -p $$ | tr -d ' ') pri=$(ps -o pri= -p $$ | tr -d ' ')"
   # make sure nothing we spawn inherits a background scheduling class
-  exec /usr/sbin/taskpolicy -t 0 -l 0 "$HOME/bin/swgr-run" --dock
+  exec /usr/sbin/taskpolicy -t 0 -l 0 "$HOME/bin/swgr-run" --dock --no-hud
 } >> "$LOG" 2>&1
