@@ -41,6 +41,11 @@ from `/Applications/CrossOver.app`, or from the Gcenx `Game Porting Toolkit.app`
 ~/bin/swgr-run --mtl4       force D3DMetal's Metal 4 backend (default only on macOS 27)
 ~/bin/swgr-run --no-rt      hide DirectX Raytracing from the game
 ~/bin/swgr-run --stats      HUD with D3DMetal's extra counters
+~/bin/swgr-run --perf       Engine.ini profile "perf": cheaper shadows / volumetrics / post (sticks until --base)
+~/bin/swgr-run --perf-max   "perfmax": perf + virtual shadow maps off
+~/bin/swgr-run --base       back to the base Engine.ini profile
+~/bin/swgr-run --metalfx    DLSS menu entries become MetalFX upscaling / frame interpolation (NVIDIA spoof)
+~/bin/swgr-run --lod-bias=1 lower texture mips (D3DM_LOD_BIAS); --max-fps=N caps presentation
 ~/bin/swgr-run --d3dm-log   keep output in ~/swgr-last.log
 ~/bin/swgr-run steam        only Steam
 ~/bin/swgr-profile 60       low-overhead profile while racing (GPU %, busy threads, hot libraries)

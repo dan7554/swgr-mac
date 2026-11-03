@@ -123,3 +123,55 @@ optional `D3DM_SUPPORT_DXR`, `D3DM_MTL4`, `D3DM_ENABLE_METALFX`, `D3DM_VENDOR_ID
   `r.FidelityFX.FI.AllowAsyncWorkloads=0` (kept in Engine.ini, harmless when FI is off).
 - Untested alternative for frame generation: `swgr-run --metalfx` with DLSS Frame Generation
   selected in the menu (D3DMetal maps it to MetalFX frame interpolation).
+
+## 13. Performance, round two (2026-11-03): what is left to pull
+
+Hardware context: MacBook Air (Mac17,3), Apple M5, 10 GPU cores, 32 GB, 2560x1664 panel at a
+1470x956 logical desktop (Wine Retina mode off, so the game outputs 1470x956 and the compositor
+scales it). Fanless, so sustained GPU load throttles; it was also on battery during the profile.
+
+What the saved settings say: Medium preset, FSR 3 upscaling in **Ultra Performance** (1/3 render
+resolution, roughly 490x318 internal) with `sg.ResolutionQuality=75`, frame interpolation off,
+hardware RT on, 60 fps cap, exclusive fullscreen. Even at that render resolution the GPU sat at
+84 to 96 percent, so the remaining cost is in passes that do not scale with the upscaler's
+render resolution: virtual shadow map pages, Nanite cluster raster, volumetric fog/cloud froxels,
+distance-field and screen-space extras, and the post chain plus the FSR upscale pass at output
+resolution. CPU is already around 450 to 550 percent (Rosetta translation of Denuvo-virtualised
+code); no single Unreal thread is pegged.
+
+Levers added to the launcher (untested until the next play session):
+- `--perf`: Engine.ini profile that biases VSM page resolution down by 1 LOD, halves Nanite
+  raster density (`r.Nanite.MaxPixelsPerEdge=2`), turns off volumetric fog/cloud, SSR,
+  distance-field shadows/AO, Lumen reflections, DOF, lens flares, light shafts. Keeps the look
+  mostly intact.
+- `--perf-max`: the same plus `r.Shadow.Virtual.Enable=0` (cascaded shadow maps at 1024,
+  2 cascades). Biggest fixed-cost saving; shadows get softer and shorter-range.
+- `--metalfx`: D3DMetal 4's DLSS-to-MetalFX mapping. Verified the plumbing: the engine's
+  `nvngx.dll` is byte-identical to Apple's `nvngx-on-metalfx.dll`, `nvngx.so` points at
+  libd3dshared, and the prefix's system32 copies are Wine placeholders that forward to it, which
+  is what Apple's Read Me asks for. The game ships both the DLSS plugin (`nvngx_dlss.dll`) and
+  Streamline (`sl.dlss_g.dll`), so the menu should offer DLSS Super Resolution and DLSS Frame
+  Generation when the launcher spoofs an NVIDIA adapter. MetalFX temporal upscaling at
+  Performance (50 percent) should look better than FSR Ultra Performance at a similar cost, and
+  MetalFX frame interpolation is the only frame-generation path that does not flicker in FSR's
+  way (FSR FI did; see section 12).
+- `--lod-bias=N` (D3DM_LOD_BIAS) and `--max-fps=N` (D3DM_MAX_FPS) for bandwidth and thermal
+  experiments.
+
+Test ladder (run from a terminal so the Metal HUD shows; read FPS and GPU time on the same track
+segment each time; keep the laptop plugged in):
+1. `swgr-run` as is: baseline number.
+2. `swgr-run --perf`, then `--perf-max`: fixed-cost reductions. If `--perf-max` helps a lot and
+   `--perf` does not, VSM was the cost.
+3. `swgr-run --metalfx`: in the display menu pick DLSS for upscaling, Performance mode, then try
+   DLSS Frame Generation. Compare with FSR Ultra Performance. If the DLSS entries do not appear,
+   the vendor spoof did not take; `--d3dm-log` and look for NGX lines.
+4. `swgr-run --mtl4`: Metal 4 backend (opt-in on macOS 26). Separate run; it changes the D3D12
+   translation path, so compare against step 1.
+5. If still GPU-bound: lower the output resolution in the game (1280x832 keeps the panel aspect)
+   because post-processing and the upscale pass run at output resolution.
+
+Things that will not help: `sg.ResolutionQuality`/FSR mode below Ultra Performance (already at
+the floor), more CPU cores (WINE_CPU_TOPOLOGY already exposes all 10), ray tracing off (measured
+earlier, little change).
+

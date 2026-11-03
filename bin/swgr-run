@@ -16,6 +16,11 @@
 #   --stats       Metal HUD with D3DMetal's extra statistics
 #   --d3dm-log    keep D3DMetal/Wine error output in ~/swgr-last.log
 #   --dock        launch via Steam (update check + Steam launch chain), direct launch as fallback
+#   --perf        Engine.ini profile "perf": cheaper shadows/volumetrics/post (config/Engine.perf.ini)
+#   --perf-max    profile "perfmax": perf + virtual shadow maps off (config/Engine.perfmax.ini)
+#   --base        back to the base Engine.ini profile (the default)
+#   --lod-bias N  D3DM_LOD_BIAS=N: positive values sample lower texture mips (less bandwidth)
+#   --max-fps N   D3DM_MAX_FPS=N: cap presented frames per second in the translation layer
 set -u
 E="$HOME/Library/Application Support/GreatGame/Engines/winecx-26.2-custom-v15"
 export WINEPREFIX="$HOME/Library/Application Support/GreatGame/Bottles/Games"
@@ -51,6 +56,11 @@ for a in "$@"; do
     --stats)   export MTL_HUD_ENABLED=1 D3DM_SHOW_HUD_STATS=1 ;;
     --d3dm-log) exec > "$HOME/swgr-last.log" 2>&1 ;;
     --dock)    DOCK=1; export MTL_HUD_ENABLED=0; unset D3DM_SHOW_HUD_STATS ;;
+    --perf)    PROFILE=perf ;;
+    --perf-max) PROFILE=perfmax ;;
+    --base)    PROFILE=base ;;
+    --lod-bias=*) export D3DM_LOD_BIAS="${a#*=}" ;;
+    --max-fps=*)  export D3DM_MAX_FPS="${a#*=}" ;;
     *) ARGS+=("$a") ;;
   esac
 done
@@ -74,10 +84,24 @@ if [ "${DOCK:-0}" = "1" ]; then
   done
 fi
 [ -f "$GAME/steam_appid.txt" ] || printf 4078430 > "$GAME/steam_appid.txt"
-# The game sometimes wipes its user Engine.ini at startup; restore our render overrides each launch.
+# The game sometimes wipes its user Engine.ini at startup; (re)install the selected render-override
+# profile each launch and lock it. Profiles live in the repo's config/ (Engine.ini, Engine.perf.ini,
+# Engine.perfmax.ini), linked into ~/bin as swgr-engine[.<profile>].ini.template. Set SWGR_PROFILE
+# or pass --perf / --perf-max / --base. The profile used last stays in place for Dock launches.
 INI="$WINEPREFIX/drive_c/users/crossover/AppData/Local/StarWarsGalacticRacer/Saved/Config/Windows/Engine.ini"
-if [ ! -s "$INI" ] && [ -f "$HOME/bin/swgr-engine.ini.template" ]; then
-  mkdir -p "$(dirname "$INI")"; cp "$HOME/bin/swgr-engine.ini.template" "$INI"; chflags uchg "$INI" 2>/dev/null
+PROFILE="${PROFILE:-${SWGR_PROFILE:-}}"
+if [ -n "$PROFILE" ]; then
+  TEMPLATE="$HOME/bin/swgr-engine.ini.template"
+  [ "$PROFILE" = base ] || TEMPLATE="$HOME/bin/swgr-engine.$PROFILE.ini.template"
+  if [ ! -f "$TEMPLATE" ]; then echo "unknown Engine.ini profile: $PROFILE" >&2; exit 2; fi
+elif [ -s "$INI" ]; then
+  TEMPLATE=""   # keep whatever profile is installed
+else
+  TEMPLATE="$HOME/bin/swgr-engine.ini.template"
+fi
+if [ -n "$TEMPLATE" ] && ! cmp -s "$TEMPLATE" "$INI"; then
+  mkdir -p "$(dirname "$INI")"; chflags nouchg "$INI" 2>/dev/null; cp "$TEMPLATE" "$INI"; chflags uchg "$INI" 2>/dev/null
+  echo "Engine.ini profile: ${PROFILE:-base}"
 fi
 cd "$GAME" || exit 1
 export WINEDLLOVERRIDES="wineusb=;winebth="   # Apple DLLs come via the per-exe GraphicsDllDirectory64 registry key
