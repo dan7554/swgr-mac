@@ -189,8 +189,16 @@ included); `--mtl3` goes back. Two stalls per race were reported with it. Eviden
   help here too).
 - Unreal's garbage collector purges on a timer (about every 61 s by default), which lines up with
   "twice in a race". Mitigation added to every Engine.ini profile: incremental reachability and
-  gather, purge interval raised to 300 s, multithreaded destruction. Also PSO precaching with larger
-  startup batches, and texture streaming pool decoupled from the VRAM figure D3DMetal reports.
+  gather, purge interval raised to 600 s, multithreaded destruction, no forced GC after a streamed
+  level unloads. Also PSO precaching with larger startup batches.
+- Memory: the Mac has 32 GB of unified memory and the game sat at about 5 GB resident, so the
+  streaming pools are now sized for that instead of for a small discrete card: texture pool 8 GB
+  (decoupled from the VRAM figure D3DMetal reports), 1 GB of temp streaming memory per frame,
+  Nanite streaming pool 2 GB, virtual-texture pools doubled. Fewer mip and page re-streams means
+  fewer stalls; expect resident memory to grow by a few GB.
+- The launcher now remembers the chosen profile in `~/.config/swgr/profile` and re-syncs the
+  locked Engine.ini from the template on every launch, so edits to `config/*.ini` reach the game
+  without passing a flag again.
 - One PSO fails to build on Metal 4 (`texcoord14` vertex/fragment mismatch) and is marked no-op; a
   rendering bug to report, not a stall.
 If the stalls persist after two or three sessions, run `swgr-run --d3dm-log` and send the log: the

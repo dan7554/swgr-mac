@@ -89,22 +89,19 @@ fi
 [ -f "$GAME/steam_appid.txt" ] || printf 4078430 > "$GAME/steam_appid.txt"
 # The game sometimes wipes its user Engine.ini at startup; (re)install the selected render-override
 # profile each launch and lock it. Profiles live in the repo's config/ (Engine.ini, Engine.perf.ini,
-# Engine.perfmax.ini), linked into ~/bin as swgr-engine[.<profile>].ini.template. Set SWGR_PROFILE
-# or pass --perf / --perf-max / --base. The profile used last stays in place for Dock launches.
+# Engine.perfmax.ini), linked into ~/bin as swgr-engine[.<profile>].ini.template. Pass --perf /
+# --perf-max / --base (or set SWGR_PROFILE); the choice is remembered in ~/.config/swgr/profile
+# so Dock launches use it, and the locked file is re-synced from the template every launch.
 INI="$WINEPREFIX/drive_c/users/crossover/AppData/Local/StarWarsGalacticRacer/Saved/Config/Windows/Engine.ini"
-PROFILE="${PROFILE:-${SWGR_PROFILE:-}}"
-if [ -n "$PROFILE" ]; then
-  TEMPLATE="$HOME/bin/swgr-engine.ini.template"
-  [ "$PROFILE" = base ] || TEMPLATE="$HOME/bin/swgr-engine.$PROFILE.ini.template"
-  if [ ! -f "$TEMPLATE" ]; then echo "unknown Engine.ini profile: $PROFILE" >&2; exit 2; fi
-elif [ -s "$INI" ]; then
-  TEMPLATE=""   # keep whatever profile is installed
-else
-  TEMPLATE="$HOME/bin/swgr-engine.ini.template"
-fi
-if [ -n "$TEMPLATE" ] && ! cmp -s "$TEMPLATE" "$INI"; then
+STATE="$HOME/.config/swgr/profile"   # remembers the last profile chosen with --perf/--perf-max/--base
+PROFILE="${PROFILE:-${SWGR_PROFILE:-$(cat "$STATE" 2>/dev/null)}}"; PROFILE="${PROFILE:-base}"
+TEMPLATE="$HOME/bin/swgr-engine.ini.template"
+[ "$PROFILE" = base ] || TEMPLATE="$HOME/bin/swgr-engine.$PROFILE.ini.template"
+if [ ! -f "$TEMPLATE" ]; then echo "unknown Engine.ini profile: $PROFILE" >&2; exit 2; fi
+mkdir -p "$(dirname "$STATE")"; printf '%s' "$PROFILE" > "$STATE"
+if ! cmp -s "$TEMPLATE" "$INI"; then   # always re-sync so template updates reach the game
   mkdir -p "$(dirname "$INI")"; chflags nouchg "$INI" 2>/dev/null; cp "$TEMPLATE" "$INI"; chflags uchg "$INI" 2>/dev/null
-  echo "Engine.ini profile: ${PROFILE:-base}"
+  echo "Engine.ini profile installed: $PROFILE"
 fi
 cd "$GAME" || exit 1
 export WINEDLLOVERRIDES="wineusb=;winebth="   # Apple DLLs come via the per-exe GraphicsDllDirectory64 registry key
