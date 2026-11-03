@@ -10,7 +10,7 @@
 # Options (combine freely):
 #   --no-rt       disable DirectX Raytracing in D3DMetal
 #   --rt          re-enable DirectX Raytracing in D3DMetal
-#   --mtl4        force D3DMetal's Metal 4 backend (default on macOS 27, off on 26)
+#   --mtl4        Metal 4 backend (now the default); --mtl3 selects the Metal 3 backend
 #   --metalfx     expose DLSS options and map them to MetalFX upscaling + frame interpolation
 #   --no-hud      hide the Metal performance HUD (the Dock app passes this)
 #   --stats       Metal HUD with D3DMetal's extra statistics
@@ -41,6 +41,8 @@ export CX_GRAPHICS_BACKEND=d3dmetal
 export CX_ACTIVE_GRAPHICS_BACKEND=d3dmetal
 export MTL_HUD_ENABLED="${MTL_HUD_ENABLED:-1}"
 export D3DM_ENABLE_METALFX="${D3DM_ENABLE_METALFX:-0}"
+# Metal 4 backend by default (opt-in on macOS 26; it was the best-feeling run). --mtl3 goes back.
+export D3DM_MTL4="${D3DM_MTL4:-1}"
 # Denuvo under Rosetta: advertise AVX/AVX2 and (via the engine patch) CLFLUSHOPT+CLWB and RDPID.
 export ROSETTA_ADVERTISE_AVX=1
 export WINE_ROSETTA_CPUID7_OR="${WINE_ROSETTA_CPUID7_OR:-01800000,00400000}"
@@ -51,6 +53,7 @@ for a in "$@"; do
     --no-rt)   export D3DM_SUPPORT_DXR=0 ;;
     --rt)      export D3DM_SUPPORT_DXR=1 ;;
     --mtl4)    export D3DM_MTL4=1 ;;
+    --mtl3)    export D3DM_MTL4=0 ;;
     --metalfx) export D3DM_ENABLE_METALFX=1 D3DM_VENDOR_ID=0x10DE D3DM_DEVICE_ID=0x2684 D3DM_DEVICE_DESCRIPTION="NVIDIA GeForce RTX 4090" ;;
     --no-hud)  export MTL_HUD_ENABLED=0 ;;
     --stats)   export MTL_HUD_ENABLED=1 D3DM_SHOW_HUD_STATS=1 ;;

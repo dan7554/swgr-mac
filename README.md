@@ -38,7 +38,7 @@ from `/Applications/CrossOver.app`, or from the Gcenx `Game Porting Toolkit.app`
 ~/bin/swgr-run --no-hud     hide the HUD
 ~/bin/swgr-run --dock       what the Dock icon runs: Steam launch flow with update check, direct fallback, HUD off
 ~/bin/swgr-run --metalfx    expose DLSS options and map them to MetalFX upscaling / frame interpolation (experimental)
-~/bin/swgr-run --mtl4       force D3DMetal's Metal 4 backend (default only on macOS 27)
+~/bin/swgr-run --mtl3       Metal 3 backend (Metal 4 is the default since 2026-11-03)
 ~/bin/swgr-run --no-rt      hide DirectX Raytracing from the game
 ~/bin/swgr-run --stats      HUD with D3DMetal's extra counters
 ~/bin/swgr-run --perf       Engine.ini profile "perf": cheaper shadows / volumetrics / post (sticks until --base)

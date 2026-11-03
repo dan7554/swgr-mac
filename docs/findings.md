@@ -175,3 +175,24 @@ Things that will not help: `sg.ResolutionQuality`/FSR mode below Ultra Performan
 the floor), more CPU cores (WINE_CPU_TOPOLOGY already exposes all 10), ray tracing off (measured
 earlier, little change).
 
+## 14. Metal 4 backend is the default; chasing the once-or-twice-a-race stall (2026-11-03)
+`--mtl4` was the best-feeling run, so the launcher now exports `D3DM_MTL4=1` by default (Dock
+included); `--mtl3` goes back. Two stalls per race were reported with it. Evidence gathered:
+- D3DMetal's shader cache for the game (`$(getconf DARWIN_USER_CACHE_DIR)/d3dm/SWGR-Win64-Shipping.exe`,
+  1.1 GB) was still growing during the session: `stage_cache.bin`, `bytecode_cache.bin` and
+  `functions.data` all changed minutes before exit. So shaders were still being compiled on first use
+  mid-race. This decays over sessions as the cache fills; the Metal 4 backend started with a colder
+  cache than Metal 3 had.
+- The launch log shows `AGX: exceeded compiled variants footprint limit` from the GPU driver. No
+  public knob for it exists (checked the driver binary), so the driver may evict and recompile
+  variants. Nothing to do but keep the cache warm and reduce variant count (lower quality presets
+  help here too).
+- Unreal's garbage collector purges on a timer (about every 61 s by default), which lines up with
+  "twice in a race". Mitigation added to every Engine.ini profile: incremental reachability and
+  gather, purge interval raised to 300 s, multithreaded destruction. Also PSO precaching with larger
+  startup batches, and texture streaming pool decoupled from the VRAM figure D3DMetal reports.
+- One PSO fails to build on Metal 4 (`texcoord14` vertex/fragment mismatch) and is marked no-op; a
+  rendering bug to report, not a stall.
+If the stalls persist after two or three sessions, run `swgr-run --d3dm-log` and send the log: the
+timestamps of new `[D3DMetal:LOG` lines versus the stalls will tell compile hitches from GC.
+
