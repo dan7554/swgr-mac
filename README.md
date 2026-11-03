@@ -46,6 +46,7 @@ from `/Applications/CrossOver.app`, or from the Gcenx `Game Porting Toolkit.app`
 ~/bin/swgr-run --base       back to the base Engine.ini profile (choice is remembered in ~/.config/swgr/profile)
 ~/bin/swgr-run --metalfx    DLSS menu entries become MetalFX upscaling / frame interpolation (NVIDIA spoof)
 ~/bin/swgr-run --lod-bias=1 lower texture mips (D3DM_LOD_BIAS); --max-fps=N caps presentation
+~/bin/swgr-run --keep-res   skip aligning the game resolution with the desktop (done every launch otherwise)
 ~/bin/swgr-run --d3dm-log   keep output in ~/swgr-last.log
 ~/bin/swgr-run steam        only Steam
 ~/bin/swgr-profile 60       low-overhead profile while racing (GPU %, busy threads, hot libraries)

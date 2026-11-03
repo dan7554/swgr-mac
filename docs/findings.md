@@ -204,3 +204,16 @@ included); `--mtl3` goes back. Two stalls per race were reported with it. Eviden
 If the stalls persist after two or three sessions, run `swgr-run --d3dm-log` and send the log: the
 timestamps of new `[D3DMetal:LOG` lines versus the stalls will tell compile hitches from GC.
 
+## 15. Only the top-left of the game visible (2026-11-03)
+Symptom: the frame filled the screen but its bottom-right was off-screen. Cause: the macOS
+Displays scaling had been changed to "More Space" (1710x1112 logical, 3420x2224 backing) while
+the game was still saved at 1470x956 exclusive fullscreen, the size of the desktop on 2026-10-26.
+Wine runs this bottle with Retina mode off, so Windows sees the logical desktop size, and Wine never
+switched the panel's mode for the game (no `Initial Display Mode` key was ever written). The
+launcher now reads the main screen size through AppKit (`osascript -l JavaScript`, no automation
+permission needed) and rewrites `ResolutionSizeX/Y`, `DesiredScreenWidth/Height` and their
+`LastUserConfirmed*` twins in `GameUserSettings.ini` when they differ, before every launch.
+`--keep-res` skips it. Output resolution follows the desktop, so "More Space" costs about 35
+percent more pixels in the output-resolution passes than the Default scaling; set the Displays
+scaling back to Default (1470x956) for the cheapest full-screen output.
+

@@ -21,6 +21,7 @@
 #   --base        back to the base Engine.ini profile (the default)
 #   --lod-bias N  D3DM_LOD_BIAS=N: positive values sample lower texture mips (less bandwidth)
 #   --max-fps N   D3DM_MAX_FPS=N: cap presented frames per second in the translation layer
+#   --keep-res    do not align the game's output resolution with the current desktop size
 set -u
 E="$HOME/Library/Application Support/GreatGame/Engines/winecx-26.2-custom-v15"
 export WINEPREFIX="$HOME/Library/Application Support/GreatGame/Bottles/Games"
@@ -64,6 +65,7 @@ for a in "$@"; do
     --base)    PROFILE=base ;;
     --lod-bias=*) export D3DM_LOD_BIAS="${a#*=}" ;;
     --max-fps=*)  export D3DM_MAX_FPS="${a#*=}" ;;
+    --keep-res)   KEEP_RES=1 ;;
     *) ARGS+=("$a") ;;
   esac
 done
@@ -87,6 +89,22 @@ if [ "${DOCK:-0}" = "1" ]; then
   done
 fi
 [ -f "$GAME/steam_appid.txt" ] || printf 4078430 > "$GAME/steam_appid.txt"
+# Match the game's output resolution to the current desktop (Wine runs with Retina mode off, so
+# Windows sees the logical desktop size). With exclusive fullscreen, a saved resolution that no
+# longer matches the desktop (e.g. after changing the Displays scaling) leaves only the top-left
+# part of the frame on screen. --keep-res skips this.
+GUS="$WINEPREFIX/drive_c/users/crossover/AppData/Local/StarWarsGalacticRacer/Saved/Config/Windows/GameUserSettings.ini"
+if [ "${KEEP_RES:-0}" != 1 ] && [ -f "$GUS" ]; then
+  DESK=$(osascript -l JavaScript -e 'ObjC.import("AppKit"); const f=$.NSScreen.mainScreen.frame; `${f.size.width}x${f.size.height}`' 2>/dev/null)
+  DW="${DESK%x*}"; DH="${DESK#*x}"
+  if [ "${DW:-0}" -gt 0 ] 2>/dev/null && [ "${DH:-0}" -gt 0 ] 2>/dev/null; then
+    CUR="$(sed -n 's/^ResolutionSizeX=//p' "$GUS")x$(sed -n 's/^ResolutionSizeY=//p' "$GUS")"
+    if [ "$CUR" != "${DW}x${DH}" ]; then
+      sed -i '' -E "s/^(ResolutionSizeX|DesiredScreenWidth|LastUserConfirmedResolutionSizeX|LastUserConfirmedDesiredScreenWidth)=.*/\1=$DW/; s/^(ResolutionSizeY|DesiredScreenHeight|LastUserConfirmedResolutionSizeY|LastUserConfirmedDesiredScreenHeight)=.*/\1=$DH/" "$GUS"
+      echo "game resolution $CUR -> ${DW}x${DH} to match the desktop"
+    fi
+  fi
+fi
 # The game sometimes wipes its user Engine.ini at startup; (re)install the selected render-override
 # profile each launch and lock it. Profiles live in the repo's config/ (Engine.ini, Engine.perf.ini,
 # Engine.perfmax.ini), linked into ~/bin as swgr-engine[.<profile>].ini.template. Pass --perf /
